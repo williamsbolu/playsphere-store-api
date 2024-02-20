@@ -38,8 +38,11 @@ exports.updateOne = (Model) =>
         });
     });
 
-exports.createOne = (Model) =>
+exports.createOne = (Model, modelType) =>
     catchAsync(async (req, res, next) => {
+        // this runs when we're creating a cart item and saved item, and fills the user field with the id gotten from d protect middleware
+        if (modelType) req.body.user = req.user.id;
+
         const doc = await Model.create(req.body); // saves d document in d database & returns d newly creatd document with d id
 
         res.status(201).json({
@@ -53,11 +56,10 @@ exports.getOne = (Model, imageFile = false, ...imgPathInfo) =>
         const doc = await Model.findById(req.params.id);
 
         if (!doc) {
-            // if null: there's no document // This logic is for handlers querying documents based on id
             return next(new AppError('No document found with that ID', 404));
         }
 
-        if (imageFile || doc?.photo.startsWith('user')) {
+        if (imageFile || doc?.photo?.startsWith('user')) {
             const command = new GetObjectCommand({
                 Bucket: process.env.BUCKET_NAME,
                 Key: doc[imgPathInfo[0]],

@@ -34,7 +34,9 @@ router.patch(
 router.delete('/deleteMe', userController.deleteMe);
 
 router.use(authController.restrictTo('admin'));
+
 router.post('/createUserAdmins', authController.CreateUserAdmin);
+
 router.route('/').get(userController.getAllUsers).post(userController.createUser);
 router
     .route('/:id')

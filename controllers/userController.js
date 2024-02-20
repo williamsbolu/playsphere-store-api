@@ -7,6 +7,7 @@ const factory = require('./handlerFactory');
 const User = require('../models/userModel');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
+const filterRequestBody = require('../utils/filterRequestBody');
 
 // Store files in memory(buffer)
 const multerStorage = multer.memoryStorage();
@@ -58,17 +59,6 @@ exports.resizeUserPhoto = catchAsync(async (req, res, next) => {
     next();
 });
 
-const filterObj = (obj, ...allowedFields) => {
-    const newObj = {};
-
-    Object.keys(obj).forEach((el) => {
-        // if the current fields is one of the allowed fields
-        if (allowedFields.includes(el)) newObj[el] = obj[el];
-    });
-
-    return newObj;
-};
-
 exports.updateMe = catchAsync(async (req, res, next) => {
     // 1. Create error if user tries to update the password
     if (req.body.password || req.body.passwordConfirm) {
@@ -81,7 +71,7 @@ exports.updateMe = catchAsync(async (req, res, next) => {
     }
 
     // 2. Filtered out unwanted fields names that are not allowed to be updated.
-    const fliteredBody = filterObj(req.body, 'firstName', 'lastName');
+    const fliteredBody = filterRequestBody(req.body, 'firstName', 'lastName');
     if (req.file) fliteredBody.photo = req.file.filename; // Runs if we're updating the photo and adds a photo property to be updated
 
     // 3. Update user document
