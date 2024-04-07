@@ -36,7 +36,7 @@ cartSchema.pre(/^find/, function (next) {
 
     this.populate({
         path: 'product',
-        select: 'name imageCover', // C:B select the projects important fields
+        select: 'name coverImage slug', // C:B select the projects important fields
     });
     next();
 });

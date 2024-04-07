@@ -14,7 +14,7 @@ const productSchema = new mongoose.Schema(
                 'video-games',
                 'handheld-game-console',
                 'accessories',
-                'network-cards',
+                'gift-cards',
             ],
             required: [true, 'A product category must be specified'],
         },
@@ -24,9 +24,11 @@ const productSchema = new mongoose.Schema(
                 'ps4',
                 'ps5',
                 'xbox-one',
-                'xbox-series',
+                'xbox-series-x',
+                'xbox-series-s',
                 'nintendo-switch',
                 'steam-deck',
+                'none',
             ],
             required: [true, 'The product platform must be specified'],
         },
@@ -47,10 +49,14 @@ const productSchema = new mongoose.Schema(
                 'horror-games',
             ],
         },
-        summary: String, // can be removed in the future
+        originalPrice: Number,
         price: {
             type: Number,
             required: [true, 'The product price must be provided'],
+        },
+        coverImage: {
+            type: String,
+            required: [true, 'The product cover image link must be provided'],
         },
         images: {
             type: [String],
@@ -61,6 +67,7 @@ const productSchema = new mongoose.Schema(
             type: Number,
             default: 0,
         },
+        // functionality not implemented yet
         ratings: {
             type: Number,
             default: 3.5,
@@ -73,12 +80,22 @@ const productSchema = new mongoose.Schema(
             enum: ['hot-deals', 'none'],
             default: 'none',
         },
+        salesQuantity: {
+            type: Number,
+            default: 0,
+            select: false,
+        },
+        // functionality not implemented yet
         youtubeLink: String,
         createdAt: {
             type: Date,
             default: Date.now,
             select: false, // remove later based on project needs
         },
+        coverImageUrl: String,
+        imagesUrl: [String],
+        prevProductSlug: String,
+        nextProductSlug: String,
         slug: String,
     },
     {
@@ -90,6 +107,10 @@ const productSchema = new mongoose.Schema(
 productSchema.pre('save', function (next) {
     this.slug = slugify(this.name, { lower: true });
     next();
+});
+
+productSchema.virtual('discountedValue').get(function () {
+    return Math.round(((this.originalPrice - this.price) / this.originalPrice) * 100);
 });
 
 const Product = mongoose.model('Product', productSchema);

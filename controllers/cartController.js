@@ -18,7 +18,16 @@ exports.filterCartRequestBody = (req, res, next) => {
 exports.updateCartItem = factory.updateOne(Cart);
 
 exports.importUserLocalCartData = catchAsync(async (req, res, next) => {
-    const importedCartData = req.body;
+    const data = req.body;
+
+    const importedCartData = data.map((cart) => {
+        return {
+            user: req.user.id,
+            product: cart.product,
+            price: cart.price,
+            quantity: cart.quantity,
+        };
+    });
 
     const cartItems = await Cart.find({ user: req.user.id });
     const existingCartIds = cartItems.map((cart) => cart.product._id); // array of existing cart "items" ids
@@ -29,7 +38,7 @@ exports.importUserLocalCartData = catchAsync(async (req, res, next) => {
         // the "CartItems" is a mongoose Document object, so i had to convert the itemId to a string for d comparism
         // We check if any cart data in the "importedCartData" exist in the database, then we push the items that do no exist to the database
         const itemExistInDatabase = existingCartIds.find(
-            (itemId) => itemId.toString() === curCart.item,
+            (itemId) => itemId.toString() === curCart.product,
         );
 
         // push any Cart item that dosen't exist before in a database, if existingCartIds is empty, find() retuns undefined for all interation
@@ -37,8 +46,6 @@ exports.importUserLocalCartData = catchAsync(async (req, res, next) => {
             filteredCartImports.push(curCart);
         }
     });
-
-    // console.log(filteredCartImports);
 
     const updatedCarts = await Cart.create(filteredCartImports);
 
@@ -56,6 +63,10 @@ exports.getUserCartData = catchAsync(async (req, res, next) => {
     let totalAmount = 0;
 
     cartItems.forEach((cart) => {
+        // Add the image url for the product
+        cart.product.coverImageUrl =
+            process.env.CLOUD_FRONT_URL + cart.product.coverImage;
+
         totalQuantity += cart.quantity;
         totalAmount += cart.itemPriceTotal;
     });

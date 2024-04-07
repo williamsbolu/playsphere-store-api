@@ -1,6 +1,3 @@
-const { GetObjectCommand } = require('@aws-sdk/client-s3');
-const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
-const s3 = require('../utils/s3');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const APIFeatures = require('../utils/apiFeatures');
@@ -60,22 +57,14 @@ exports.getOne = (Model, imageFile = false, ...imgPathInfo) =>
         }
 
         if (imageFile || doc?.photo?.startsWith('user')) {
-            const command = new GetObjectCommand({
-                Bucket: process.env.BUCKET_NAME,
-                Key: doc[imgPathInfo[0]],
-            });
-            const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
-            doc[imgPathInfo[1]] = url;
-            // if (doc?.images && doc?.images.length > 0) {
-            //     for (const imgPath of doc.images) {
-            //         const command2 = new GetObjectCommand({
-            //             Bucket: process.env.BUCKET_NAME,
-            //             Key: imgPath,
-            //         });
-            //         const curUrl = await getSignedUrl(s3, command2, { expiresIn: 3600 });
-            //         doc.imagesUrl.push(curUrl);
-            //     }
-            // }
+            doc[imgPathInfo[1]] = process.env.CLOUD_FRONT_URL + doc[imgPathInfo[0]];
+
+            if (doc?.images && doc?.images.length > 0) {
+                for (const imgPath of doc.images) {
+                    const curUrl = process.env.CLOUD_FRONT_URL + imgPath;
+                    doc.imagesUrl.push(curUrl);
+                }
+            }
         }
 
         res.status(200).json({
@@ -84,8 +73,14 @@ exports.getOne = (Model, imageFile = false, ...imgPathInfo) =>
         });
     });
 
-exports.getAll = (Model) =>
+exports.getAll = (Model, imageFile = false, ...imgPathInfo) =>
     catchAsync(async (req, res, next) => {
+        // for caculating the total document count without pagination
+        const queryObj = { ...req.query };
+        const excludedFields = ['page', 'sort', 'limit', 'fields'];
+        excludedFields.forEach((el) => delete queryObj[el]);
+        const count = await Model.countDocuments(queryObj);
+
         const features = new APIFeatures(Model.find(), req.query)
             .filter()
             .sort()
@@ -94,10 +89,18 @@ exports.getAll = (Model) =>
 
         const doc = await features.query;
 
+        if (imageFile) {
+            for (const curDoc of doc) {
+                curDoc[imgPathInfo[1]] =
+                    process.env.CLOUD_FRONT_URL + curDoc[imgPathInfo[0]];
+            }
+        }
+
         // SEND RESPONSE
         res.status(200).json({
             status: 'success',
             results: doc.length,
+            count,
             data: doc,
         });
     });

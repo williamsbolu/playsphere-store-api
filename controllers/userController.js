@@ -42,14 +42,16 @@ exports.resizeUserPhoto = catchAsync(async (req, res, next) => {
     }
 
     const buffer = await sharp(req.file.buffer)
-        .resize(500, 500)
+        .resize(500, 500, {
+            fit: 'contain',
+        })
         .toFormat('jpeg')
         .jpeg({ quality: 90 })
         .toBuffer();
 
     const command = new PutObjectCommand({
         Bucket: process.env.BUCKET_NAME,
-        Key: req.file.filename,
+        Key: `users/${req.file.filename}`,
         Body: buffer,
         ContentType: req.file.mimetype,
     });
@@ -131,7 +133,7 @@ exports.createUser = (req, res) => {
 };
 
 exports.getAllUsers = factory.getAll(User);
-// false because we don't want it to create a user url by default
+// false because we don't want it to create a user url by default, only if the user has uploaded an avatar image
 exports.getUser = factory.getOne(User, false, 'photo', 'imageUrl');
 
 // do NOT update the password with this
