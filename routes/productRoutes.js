@@ -11,6 +11,7 @@ router
     .route('/recently-added')
     .get(productController.aliasRecentProducts, productController.getAllProducts);
 router.route('/product/:slug').get(productController.getProductSlug);
+router.route('/search').get(productController.searchProducts);
 
 router
     .route('/')

@@ -314,6 +314,86 @@ exports.getProductSlug = catchAsync(async (req, res, next) => {
     });
 });
 
+exports.searchProducts = catchAsync(async (req, res, next) => {
+    const query = req.query.q || '';
+    const sortby = req.query.sort.split(/(?<=-)/);
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+
+    let field = '';
+    let direction;
+    if (sortby.length === 2) {
+        // descending
+        field = sortby[1];
+        direction = -1;
+    } else {
+        // ascending
+        field = sortby[0];
+        direction = 1;
+    }
+
+    // Split the query into individual search terms
+    const terms = query.split(' ').filter((term) => term.trim() !== '');
+
+    const aggregationPipeline = [
+        {
+            $match: {
+                $and: terms.map((term) => ({
+                    $or: [
+                        { name: { $regex: term, $options: 'i' } }, // i means Case-insensitive search on product name
+                        { category: { $regex: term, $options: 'i' } },
+                        { platform: { $regex: term, $options: 'i' } },
+                        { brand: { $regex: term, $options: 'i' } },
+                    ],
+                })),
+            },
+        },
+        {
+            $facet: {
+                metadata: [{ $count: 'total' }],
+                data: [
+                    { $sort: { [field]: direction } },
+                    { $skip: skip },
+                    { $limit: limit },
+                    {
+                        $project: {
+                            category: 0,
+                            platform: 0,
+                            brand: 0,
+                            ratings: 0,
+                            size: 0,
+                            createdAt: 0,
+                            images: 0,
+                            imagesUrl: 0,
+                            __v: 0,
+                        },
+                    },
+                ],
+            },
+        },
+    ];
+
+    const productResults = await Product.aggregate(aggregationPipeline);
+
+    const { metadata, data } = productResults[0];
+
+    const totalCount = metadata[0]?.total || 0;
+
+    if (data?.length > 0) {
+        for (const product of data) {
+            product.coverImageUrl = process.env.CLOUD_FRONT_URL + product.coverImage;
+        }
+    }
+
+    res.status(200).json({
+        status: 'success',
+        count: totalCount,
+        results: data.length,
+        data: data,
+    });
+});
+
 exports.aliasHotDeals = (req, res, next) => {
     req.query.offers = 'hot-deals';
     req.query.limit = '12';

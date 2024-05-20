@@ -67,6 +67,11 @@ const productSchema = new mongoose.Schema(
             type: Number,
             default: 0,
         },
+        size: {
+            type: String,
+            default: 'sm',
+            enum: ['sm', 'lg', 'xl'],
+        },
         // functionality not implemented yet
         ratings: {
             type: Number,
@@ -104,13 +109,15 @@ const productSchema = new mongoose.Schema(
     },
 );
 
+productSchema.virtual('discountedValue').get(function () {
+    if (!this.originalPrice) return;
+
+    return Math.round(((this.originalPrice - this.price) / this.originalPrice) * 100);
+});
+
 productSchema.pre('save', function (next) {
     this.slug = slugify(this.name, { lower: true });
     next();
-});
-
-productSchema.virtual('discountedValue').get(function () {
-    return Math.round(((this.originalPrice - this.price) / this.originalPrice) * 100);
 });
 
 const Product = mongoose.model('Product', productSchema);

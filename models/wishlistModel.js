@@ -33,7 +33,7 @@ wishlistSchema.pre('save', function (next) {
 wishlistSchema.pre(/^find/, function (next) {
     this.populate({
         path: 'product',
-        select: 'name imageCover price', // C:B select the projects important fields
+        select: 'name coverImage originalPrice quantity price', // C:B select the projects important fields
     });
     next();
 });

@@ -1,19 +1,37 @@
 const Wishlist = require('../models/wishlistModel');
 const factory = require('./handlerFactory');
 const catchAsync = require('../utils/catchAsync');
+const APIFeatures = require('../utils/apiFeatures');
 
 exports.getAllWishlists = factory.getAll(Wishlist);
 exports.deleteWishlist = factory.deleteOne(Wishlist);
 exports.createWishlist = factory.createOne(Wishlist, 'Wishlist');
 
 exports.getUserWishlistData = catchAsync(async (req, res, next) => {
+    const queryObj = { ...req.query };
+    const excludedFields = ['page', 'sort', 'limit', 'fields'];
+    excludedFields.forEach((el) => delete queryObj[el]);
+    const count = await Wishlist.countDocuments(queryObj);
+
     // we get access to the req.user from the protect middleware
-    const wishlistItems = await Wishlist.find({ user: req.user.id });
+    // const wishlistItems = await Wishlist.find({ user: req.user.id });
+
+    const features = new APIFeatures(
+        Wishlist.find({ user: req.user.id }),
+        req.query,
+    ).paginate();
+
+    const wishlistItems = await features.query;
+
+    wishlistItems.forEach((doc) => {
+        doc.product.coverImageUrl = process.env.CLOUD_FRONT_URL + doc.product.coverImage;
+    });
 
     // send response
     res.status(200).json({
         status: 'success',
         results: wishlistItems.length,
+        count,
         data: wishlistItems,
     });
 });

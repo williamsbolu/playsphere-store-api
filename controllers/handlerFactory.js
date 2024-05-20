@@ -60,6 +60,7 @@ exports.getOne = (Model, imageFile = false, ...imgPathInfo) =>
             doc[imgPathInfo[1]] = process.env.CLOUD_FRONT_URL + doc[imgPathInfo[0]];
 
             if (doc?.images && doc?.images.length > 0) {
+                // switch iterators to the forEach loop
                 for (const imgPath of doc.images) {
                     const curUrl = process.env.CLOUD_FRONT_URL + imgPath;
                     doc.imagesUrl.push(curUrl);
