@@ -35,30 +35,11 @@ const deliveryAddressSchema = new mongoose.Schema({
     },
 });
 
-const productItemSchema = new mongoose.Schema({
-    product: {
-        type: mongoose.Schema.ObjectId,
-        ref: 'Product',
-        required: [true, 'The product muust must be specified.'],
-    },
-    quantity: {
-        type: Number,
-        required: [true, 'The product quantity must be specified.'],
-    },
-    // displays the current price at the time the product was ordered
-    price: {
-        type: Number,
-        required: [true, 'The product price must be specified.'],
-    },
-    originalPrice: Number,
-    status: {
-        type: String,
-        default: 'unconfirmed',
-        enum: ['unconfirmed', 'confirmed', 'cancelled', 'out-of-stock', 'refunded'],
-    },
-});
-
 const orderSchema = new mongoose.Schema({
+    productName: {
+        type: String,
+        required: [true, 'The ordered product must have a name.'],
+    },
     user: {
         type: mongoose.Schema.ObjectId,
         ref: 'User',
@@ -68,21 +49,20 @@ const orderSchema = new mongoose.Schema({
         lowercase: true,
         validate: [validator.isEmail, 'Please provide a valid email'],
     },
-    products: {
-        type: [productItemSchema],
-        required: [true, 'The ordered products must be included.'],
-    },
-    totalQuantity: {
+    product: [
+        {
+            type: mongoose.Schema.ObjectId,
+            ref: 'Product',
+            required: [true, 'The ordered product must be specified.'],
+        },
+    ],
+    quantity: {
         type: Number,
-        required: [true, 'The total quantity must be specified.'],
+        default: 1,
     },
-    totalAmount: {
+    price: {
         type: Number,
-        required: [true, 'The total amount must be specified.'],
-    },
-    deliveryFees: {
-        type: Number,
-        required: [true, 'The delivery amount must be specified.'],
+        required: [true, 'The product price must be specified.'],
     },
     // failed orders issues arises automatically, when an order payment fails
     // cancelled can be refunded orders
@@ -117,14 +97,6 @@ orderSchema.pre('validate', function (next) {
     if (this.userEmail && !validator.isEmail(this.userEmail)) {
         this.invalidate('userEmail', 'Invalid email format.');
     }
-    next();
-});
-
-orderSchema.pre(/^find/, function (next) {
-    this.populate({
-        path: 'products.product',
-        select: 'name coverImage coverImageUrl slug',
-    });
     next();
 });
 
