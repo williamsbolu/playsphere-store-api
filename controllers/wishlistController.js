@@ -24,7 +24,8 @@ exports.getUserWishlistData = catchAsync(async (req, res, next) => {
     const wishlistItems = await features.query;
 
     wishlistItems.forEach((doc) => {
-        doc.product.coverImageUrl = process.env.CLOUD_FRONT_URL + doc.product.coverImage;
+        doc.product.coverImageUrl =
+            process.env.PRODUCTS_CLOUD_FRONT_URL + doc.product.coverImage;
     });
 
     // send response

@@ -129,7 +129,7 @@ exports.getAllOrders = catchAsync(async (req, res, next) => {
     orders.forEach((order) => {
         order.products.forEach((productItem) => {
             productItem.product.coverImageUrl =
-                process.env.CLOUD_FRONT_URL + productItem.product.coverImage;
+                process.env.PRODUCTS_CLOUD_FRONT_URL + productItem.product.coverImage;
         });
     });
 

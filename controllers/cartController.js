@@ -65,7 +65,7 @@ exports.getUserCartData = catchAsync(async (req, res, next) => {
     cartItems.forEach((cart) => {
         // Add the image url for the product
         cart.product.coverImageUrl =
-            process.env.CLOUD_FRONT_URL + cart.product.coverImage;
+            process.env.PRODUCTS_CLOUD_FRONT_URL + cart.product.coverImage;
 
         totalQuantity += cart.quantity;
         totalAmount += cart.itemPriceTotal;
