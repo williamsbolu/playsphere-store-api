@@ -267,9 +267,9 @@ exports.getProductSlug = catchAsync(async (req, res, next) => {
         next(new AppError('There is no product with that name.', 404));
     }
 
-    doc.coverImageUrl = process.env.CLOUD_FRONT_URL + doc.coverImage;
+    doc.coverImageUrl = process.env.PRODUCTS_CLOUD_FRONT_URL + doc.coverImage;
     for (const imgPath of doc.images) {
-        const curUrl = process.env.CLOUD_FRONT_URL + imgPath;
+        const curUrl = process.env.PRODUCTS_CLOUD_FRONT_URL + imgPath;
         doc.imagesUrl.push(curUrl);
     }
 
@@ -382,7 +382,8 @@ exports.searchProducts = catchAsync(async (req, res, next) => {
 
     if (data?.length > 0) {
         for (const product of data) {
-            product.coverImageUrl = process.env.CLOUD_FRONT_URL + product.coverImage;
+            product.coverImageUrl =
+                process.env.PRODUCTS_CLOUD_FRONT_URL + product.coverImage;
         }
     }
 

@@ -1,6 +1,7 @@
 const multer = require('multer');
 const sharp = require('sharp');
 const { PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const { CreateInvalidationCommand } = require('@aws-sdk/client-cloudfront');
 
 const s3 = require('../utils/s3');
 const factory = require('./handlerFactory');
@@ -8,6 +9,7 @@ const User = require('../models/userModel');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const filterRequestBody = require('../utils/filterRequestBody');
+const cloudFront = require('../utils/cloudFront');
 
 // Store files in memory(buffer)
 const multerStorage = multer.memoryStorage();
@@ -35,7 +37,7 @@ exports.resizeUserPhoto = catchAsync(async (req, res, next) => {
 
     // ('default) means when d user updates the profile img for d first time we create a unique filename
     if (doc.photo.startsWith('default')) {
-        req.file.filename = `user-${req.user.id}-${Date.now()}.jpeg`; // so we can use it in the updateMe middleware
+        req.file.filename = `user-${req.user.id}-${Date.now()}.jpg`; // so we can use it in the updateMe middleware
     } else {
         // when d user is not updating for d first time we use the previous generated unique filename
         req.file.filename = doc.photo;
@@ -45,7 +47,7 @@ exports.resizeUserPhoto = catchAsync(async (req, res, next) => {
         .resize(500, 500, {
             fit: 'contain',
         })
-        .toFormat('jpeg')
+        .toFormat('jpg')
         .jpeg({ quality: 90 })
         .toBuffer();
 
@@ -53,10 +55,29 @@ exports.resizeUserPhoto = catchAsync(async (req, res, next) => {
         Bucket: process.env.BUCKET_NAME,
         Key: `users/${req.file.filename}`,
         Body: buffer,
-        ContentType: req.file.mimetype,
+        ContentType: 'image/jpeg',
     });
 
     await s3.send(command);
+
+    // this code dosen't run when the user updates the image for the first time, because the file dosent exist on s3 yet
+    if (!doc.photo.startsWith('default')) {
+        // invalidate the cloud front cache for the updated image
+        const callerReferenceValue = `${req.file.filename}-${Date.now()}`;
+
+        const invalidationParams = {
+            DistributionId: process.env.USERS_DISTRIBUTION_ID,
+            InvalidationBatch: {
+                CallerReference: callerReferenceValue,
+                Paths: {
+                    Quantity: 1,
+                    Items: ['/' + req.file.filename],
+                },
+            },
+        };
+        const invalidationCommand = new CreateInvalidationCommand(invalidationParams);
+        await cloudFront.send(invalidationCommand);
+    }
 
     next();
 });
@@ -107,7 +128,7 @@ exports.deleteUserImage = catchAsync(async (req, res, next) => {
 
     const params = {
         Bucket: process.env.BUCKET_NAME,
-        Key: doc.photo,
+        Key: `users/${doc.photo}`,
     };
 
     const command = new DeleteObjectCommand(params);
