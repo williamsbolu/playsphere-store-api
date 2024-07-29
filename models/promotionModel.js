@@ -9,4 +9,5 @@ const promotionSchema = new mongoose.Schema({
     imageUrl: String,
 });
 
-module.exports = mongoose.model('Promotion', promotionSchema);
+const Promotion = mongoose.model('Promotion', promotionSchema);
+module.exports = Promotion;

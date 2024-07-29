@@ -62,7 +62,7 @@ const productSchema = new mongoose.Schema(
             type: [String],
             required: [true, 'The product images link must be provided'],
         },
-        description: String,
+        description: [String],
         quantity: {
             type: Number,
             default: 0,

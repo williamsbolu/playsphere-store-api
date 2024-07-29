@@ -10,6 +10,7 @@ const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const hpp = require('hpp');
 
+const promotionRouter = require('./routes/promotionRoutes');
 const productRouter = require('./routes/productRoutes');
 const cartRouter = require('./routes/cartRoutes');
 const userRouter = require('./routes/userRoutes');
@@ -69,6 +70,7 @@ app.use((req, res, next) => {
     next();
 });
 
+app.use('/api/v1/promotions', promotionRouter);
 app.use('/api/v1/products', productRouter);
 app.use('/api/v1/cart', cartRouter);
 app.use('/api/v1/users', userRouter);
